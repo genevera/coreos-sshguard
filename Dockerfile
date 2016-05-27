@@ -1,5 +1,4 @@
-FROM alpine:3.2
-MAINTAINER Nick Owens <mischief@offblast.org> (@mischief)
-RUN apk add --update iptables ip6tables sshguard && rm -rf /var/cache/apk/*
+FROM gliderlabs/alpine
+MAINTAINER Genevera <genevera.codes@gmail.com> (@genevera)
+RUN apk-install iptables ip6tables sshguard
 ENTRYPOINT ["/usr/sbin/sshguard"]
-
