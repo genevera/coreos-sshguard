@@ -5,7 +5,7 @@ Requires=docker.service
 
 [Service]
 TimeoutStartSec=0
-Environment=IMAGE_NAME=mischief/sshguard:1.6.0
+Environment=IMAGE_NAME=quay.io/genevera/coreos-sshguard
 
 ExecStartPre=-/usr/bin/docker kill %p
 ExecStartPre=-/usr/bin/docker rm %p
@@ -24,11 +24,10 @@ ExecStartPre=-/usr/sbin/ip6tables -A INPUT -j sshguard
 # because sshguard tries to verify pids inside log messages, and CoreOS
 # uses inetd style sshd, we strip out the pid with sed so sshguard
 # doesn't reject the log messages from the journal.
-ExecStart=/bin/sh -c 'journalctl --no-pager -q -f -t sshd | sed -u "s/\\[[0-9]*\\]//" | docker run -i --name %p --rm --net=host --privileged $IMAGE_NAME'
+ExecStart=/bin/sh -c 'journalctl --no-pager -f -n0 -q -t sshd | /usr/bin/docker run -i --name=%n -v /dev/log:/dev/log --net=host --cap-add=NET_ADMIN --cap-add=NET_RAW quay.io/genevera/coreos-sshguard'
 
 ExecStop=-/usr/bin/docker stop %p
 ExecStop=-/usr/bin/docker rm %p
 
 [X-Fleet]
 Global=true
-
