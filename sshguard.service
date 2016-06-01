@@ -1,7 +1,7 @@
 [Unit]
 Description=%p
-After=docker.service
-Requires=docker.service
+After=network-online.target iptables-restore.service docker.service
+Requires=network-online.target docker.service
 
 [Service]
 TimeoutStartSec=0
@@ -9,17 +9,11 @@ Environment=IMAGE_NAME=quay.io/genevera/coreos-sshguard
 
 ExecStartPre=-/usr/bin/docker kill %n
 ExecStartPre=-/usr/bin/docker rm %n
-ExecStartPre=/usr/bin/docker pull $IMAGE_NAME
-
-# setup sshguard tables
-ExecStartPre=-/usr/sbin/iptables -N sshguard
-ExecStartPre=-/usr/sbin/ip6tables -N sshguard
+ExecStartPre=/usr/bin/docker pull 
 
 # block abuser traffic
-ExecStartPre=-/usr/sbin/iptables -D INPUT -j sshguard
-ExecStartPre=-/usr/sbin/ip6tables -D INPUT -j sshguard
-ExecStartPre=-/usr/sbin/iptables -A INPUT -j sshguard
-ExecStartPre=-/usr/sbin/ip6tables -A INPUT -j sshguard
+ExecStartPre=/bin/sh -c 'if /usr/sbin/iptables -N sshguard; then /usr/sbin/iptables -A sshguard -j ACCEPT; fi'
+ExecStartPre=/bin/sh -c 'if /usr/sbin/ip6tables -N sshguard; then /usr/sbin/ip6tables -A sshguard -j ACCEPT; fi'
 
 # because sshguard tries to verify pids inside log messages, and CoreOS
 # uses inetd style sshd, we strip out the pid with sed so sshguard
@@ -28,6 +22,13 @@ ExecStart=/bin/sh -c 'journalctl --no-pager -f -n0 -q -t sshd | /usr/bin/docker 
 
 ExecStop=-/usr/bin/docker stop %n
 ExecStop=-/usr/bin/docker rm %n
+
+# my setup relies on sshguard accepting by default, so this is needed after sshguard flushes the chain at exit
+ExecStop=/bin/sh -c '/usr/sbin/iptables -A sshguard -j ACCEPT'
+ExecStop=/bin/sh -c '/usr/sbin/ip6tables -A sshguard -j ACCEPT'
+
+[Install]
+WantedBy=multi-user.target
 
 [X-Fleet]
 Global=true
