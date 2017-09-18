@@ -25,7 +25,7 @@ coreos:
 
         ExecStartPre=-/usr/bin/docker kill %n
         ExecStartPre=-/usr/bin/docker rm %n
-        ExecStartPre=/usr/bin/docker pull 
+        ExecStartPre=/usr/bin/docker pull ${IMAGE_NAME}
 
         # block abuser traffic
         ExecStartPre=/bin/sh -c 'if /usr/sbin/iptables -N sshguard; then /usr/sbin/iptables -A sshguard -j ACCEPT; fi'
